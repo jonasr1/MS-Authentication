@@ -1,0 +1,4 @@
+.ven
+*.log
+__pycache__
+.idea
