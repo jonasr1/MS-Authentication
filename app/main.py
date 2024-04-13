@@ -5,6 +5,14 @@ from app.routes import router
 
 app = FastAPI()
 
+# {
+#   "username": "joao",
+#   "password": "joao123"
+# }# {
+#   "username": "jose",
+#   "password": "12jose"
+# }
+
 
 @app.get('/')
 def health_check():
