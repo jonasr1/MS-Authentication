@@ -7,7 +7,7 @@ from app.depends import get_db_session, token_verifier
 from app.auth_user import UserUseCases
 from app.schemas import User
 
-user_router = APIRouter(prefix='/user')
+user_router = APIRouter()
 # Essa dependência garante que todas as rotas dentro do 'test_router' tenha o método token_verifier
 test_router = APIRouter(prefix='/test', dependencies=[Depends(token_verifier)])
 

@@ -22,7 +22,6 @@ class Connection:
 
         self.metadata = MetaData()
 
-
     def create_database(self):
         if not database_exists(self.engine.url):
             create_database(self.engine.url)
