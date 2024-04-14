@@ -1,4 +1,4 @@
 .ven
 *.log
-__pycache__
+app/__pycache__
 .idea

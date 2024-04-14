@@ -1,4 +1,6 @@
 from datetime import datetime, timedelta
+
+import pytz
 from fastapi import status
 from fastapi.exceptions import HTTPException
 from sqlalchemy.orm import Session
@@ -35,7 +37,7 @@ class UserUseCases:
                 detail='User already exists'
             )
 
-    def user_login(self, user: User, expires_in: int = 30):  # 30 minutos
+    def user_login(self, user: User, expires_in: int = 30):
         user_on_db = self.db_session.query(UserModel).filter_by(username=user.username).first()
         if user_on_db is None:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
@@ -45,10 +47,14 @@ class UserUseCases:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
                                 detail='Invalid username or password')
 
-        expirar = datetime.utcnow() + timedelta(minutes=expires_in) # Obtém o horário atual em UTC (padrão global)
+        # expirar = datetime.utcnow() + timedelta(minutes=expires_in)  # Obtém o horário atual em UTC (padrão global)
+
+        brasil_tz = pytz.timezone('America/Sao_Paulo')
+        expirar = datetime.now(brasil_tz) + timedelta(minutes=expires_in)
 
         payload = {
-            'sub': user.username,
+            'username': user.username,
+            'password': user.password,
             'expirar': expirar.isoformat()
         }
 
@@ -56,3 +62,17 @@ class UserUseCases:
 
         return {'access_token': access_token,
                 'expirar': expirar.isoformat()}
+
+    def verify_token(self, access_token):
+        try:
+            data = jwt.decode(access_token, SECRET_KEY, algorithms=[ALGORITHM])
+        except JWTError:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
+                                detail='Invalid access token'
+                                )
+        user_on_db = self.db_session.query(UserModel).filter_by(username=data['username']).first()
+
+        if user_on_db is None:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
+                                detail='Invalid access token'
+                                )

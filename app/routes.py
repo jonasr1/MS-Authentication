@@ -1,22 +1,27 @@
 from fastapi.security import OAuth2PasswordRequestForm
 from fastapi import APIRouter, Depends, status
 from fastapi.responses import JSONResponse
+from decouple import config
 from sqlalchemy.orm import Session
-from app.depends import get_db_session
+from app.depends import get_db_session, token_verifier
 from app.auth_user import UserUseCases
 from app.schemas import User
 
-router = APIRouter(prefix='/user')
+user_router = APIRouter(prefix='/user')
+# Essa dependência garante que todas as rotas dentro do 'test_router' tenha o método token_verifier
+test_router = APIRouter(prefix='/test', dependencies=[Depends(token_verifier)])
+
+LOGIN_URL = config('LOGIN_URL')  # Define a constante a partir da variável de ambiente .env
 
 
-@router.post('/api/v1/resgister/token/')
+@user_router.post('/resgister/api/v1/')
 def user_register(user: User, db_session: Session = Depends(get_db_session)):
     user_case = UserUseCases(db_session=db_session)
     user_case.user_register(user=user)
     return JSONResponse(content={'msg': 'success'}, status_code=status.HTTP_201_CREATED)
 
 
-@router.post('/login/api/v1/authetication/token/')
+@user_router.post(LOGIN_URL)
 def user_login(request_form_user: OAuth2PasswordRequestForm = Depends(), db_session: Session = Depends(get_db_session)):
     user_case = UserUseCases(db_session=db_session)
     user = User(username=request_form_user.username,
@@ -26,3 +31,8 @@ def user_login(request_form_user: OAuth2PasswordRequestForm = Depends(), db_sess
     return JSONResponse(content=auth_data,
                         status_code=status.HTTP_200_OK
                         )
+
+
+@test_router.get('/api/v1/authentication/validation/')
+def test_user_verify():
+    return 'It works'
