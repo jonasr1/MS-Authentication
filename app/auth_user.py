@@ -1,15 +1,15 @@
 from datetime import datetime, timedelta
 
-import pytz
+from decouple import config
 from fastapi import status
 from fastapi.exceptions import HTTPException
-from sqlalchemy.orm import Session
+from jose import jwt, JWTError
+from passlib.context import CryptContext
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.orm import Session
+
 from app.db.models import UserModel
 from app.schemas import User
-from decouple import config
-from passlib.context import CryptContext
-from jose import jwt, JWTError
 
 crypt_context = CryptContext(schemes=['sha256_crypt'])
 
@@ -37,7 +37,7 @@ class UserUseCases:
                 detail='User already exists'
             )
 
-    def user_login(self, user: User, expires_in: int = 30):
+    def user_login(self, user: User, expires_in: int = 1):
         user_on_db = self.db_session.query(UserModel).filter_by(username=user.username).first()
         if user_on_db is None:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
@@ -47,18 +47,14 @@ class UserUseCases:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
                                 detail='Invalid username or password')
 
-        # expirar = datetime.utcnow() + timedelta(minutes=expires_in)  # Obtém o horário atual em UTC (padrão global)
-
-        brasil_tz = pytz.timezone('America/Sao_Paulo')
-        expirar = datetime.now(brasil_tz) + timedelta(minutes=expires_in)
+        expirar = datetime.utcnow() + timedelta(minutes=expires_in)  # Obtém o horário atual em UTC (padrão global)
 
         payload = {
             'username': user.username,
-            'password': user.password,
             'expirar': expirar.isoformat()
         }
 
-        access_token = jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
+        access_token = jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)  # Signature
 
         return {'access_token': access_token,
                 'expirar': expirar.isoformat()}
@@ -66,10 +62,22 @@ class UserUseCases:
     def verify_token(self, access_token):
         try:
             data = jwt.decode(access_token, SECRET_KEY, algorithms=[ALGORITHM])
+            expirar_isoformat = data.get('expirar', None)
+            if not expirar_isoformat:
+                raise ValueError('Expiration date not found in token')
+
+            expirar = datetime.fromisoformat(expirar_isoformat)  # Converta a data de expiração de volta para um objeto datetime
+            current_time_utc = datetime.utcnow()
+
+            if expirar < current_time_utc:
+                raise jwt.ExpiredSignatureError
+        except jwt.ExpiredSignatureError:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='Expired token')
         except JWTError:
-            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
-                                detail='Invalid access token'
-                                )
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail='Invalid access token')
+        except ValueError as ve:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=str(ve))
+
         user_on_db = self.db_session.query(UserModel).filter_by(username=data['username']).first()
 
         if user_on_db is None:

@@ -11,10 +11,11 @@ user_router = APIRouter()
 # Essa dependência garante que todas as rotas dentro do 'test_router' tenha o método token_verifier
 test_router = APIRouter(prefix='/test', dependencies=[Depends(token_verifier)])
 
+
 LOGIN_URL = config('LOGIN_URL')  # Define a constante a partir da variável de ambiente .env
 
 
-@user_router.post('/resgister/api/v1/')
+@user_router.post('/user/resgister/api/v1/')
 def user_register(user: User, db_session: Session = Depends(get_db_session)):
     user_case = UserUseCases(db_session=db_session)
     user_case.user_register(user=user)

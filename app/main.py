@@ -28,6 +28,6 @@ if __name__ == "__main__":
     conn.create_database()
     conn.create_user_table()
     import uvicorn
-    uvicorn.run("main:app", host="127.0.0.1", port=8000, reload=True)
-    # uvicorn.run("main:app", host="127.0.0.1", port=8000, log_level="debug", reload=True)
+    # uvicorn.run("main:app", host="127.0.0.1", port=8000, reload=True)
+    uvicorn.run("main:app", host="127.0.0.1", port=8000, log_level="debug", reload=True)
 
