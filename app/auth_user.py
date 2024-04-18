@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+from urllib import request
 
 from decouple import config
 from fastapi import status
@@ -66,7 +67,8 @@ class UserUseCases:
             if not expirar_isoformat:
                 raise ValueError('Expiration date not found in token')
 
-            expirar = datetime.fromisoformat(expirar_isoformat)  # Converta a data de expiração de volta para um objeto datetime
+            expirar = datetime.fromisoformat(
+                expirar_isoformat)  # Converta a data de expiração de volta para um objeto datetime
             current_time_utc = datetime.utcnow()
 
             if expirar < current_time_utc:
@@ -84,3 +86,4 @@ class UserUseCases:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
                                 detail='Invalid access token'
                                 )
+
