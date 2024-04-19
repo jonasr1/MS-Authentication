@@ -1,5 +1,4 @@
 from datetime import datetime, timedelta
-from urllib import request
 
 from decouple import config
 from fastapi import status
@@ -38,7 +37,7 @@ class UserUseCases:
                 detail='User already exists'
             )
 
-    def user_login(self, user: User, expires_in: int = 1):
+    def user_login(self, user: User, expires_in: int = 30):
         user_on_db = self.db_session.query(UserModel).filter_by(username=user.username).first()
         if user_on_db is None:
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED,
